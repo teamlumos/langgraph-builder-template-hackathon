@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
-@dataclass
-class State:
-    """Defines the input state for the agent, representing a narrower interface to the outside world.
+class SearchState(BaseModel):
+    """Search state."""
 
-    This class is used to define the initial state and structure of incoming data.
-    See: https://langchain-ai.github.io/langgraph/concepts/low_level/#state
-    for more information.
-    """
-
-    changeme: str = "example"
+    user_query: str
+    filters: Optional[dict] = None
+    results: Optional[List[dict]] = None
+    status: str = "awaiting_input"
