@@ -12,5 +12,6 @@ fi
 
 $PYTHON -m venv $BASE_DIR/.venv
 source $BASE_DIR/.venv/bin/activate
-pip install -r $BASE_DIR/requirements/dev.txt
-$PYTHON $BASE_DIR/scripts/generate_pyproject.toml.py # Generate pyproject.toml with dependencies from dev.txt for LangStudio
+
+cd $BASE_DIR/scripts
+$PYTHON lint.py
