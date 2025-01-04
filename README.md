@@ -40,12 +40,18 @@ To get started with your LangGraph application, follow these steps:
 
 3. **Set up your environment:**
 
-   Create a `.env` file in the root directory and configure your environment variables as needed.
+   Create a `.env` file in the graph directory and configure your environment variables as needed.
 
 4. **Run the application:**
 
    ```bash
    ./graph/scripts/start.sh
+   ```
+
+5. **Lint the application:**
+
+   ```bash
+   ./graph/scripts/lint.sh
    ```
 
 ## Usage
