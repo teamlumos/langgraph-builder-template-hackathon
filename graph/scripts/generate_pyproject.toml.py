@@ -9,7 +9,7 @@ with open("graph/requirements/prod.txt", "r") as req_file:
     ]
 
 # Load the existing pyproject.toml
-pyproject_path = "graph/pyproject.toml"
+pyproject_path = "pyproject.toml"
 pyproject = toml.load(pyproject_path)
 
 # Update the dependencies in pyproject.toml

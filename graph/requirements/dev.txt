@@ -11,3 +11,7 @@ flake8-isort==6.1.1
 flake8==7.1.1
 isort==5.13.2
 pep8-naming==0.14.1
+
+# LangGraph
+langgraph-cli[inmem]
+

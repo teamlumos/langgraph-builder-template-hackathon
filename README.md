@@ -80,4 +80,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ### About the Author
 
-Armando Murga [[LinkedIn]](https://linkedin.com/in/armandomurga) is a seasoned technical leader with 15+ years of expertise in full-stack development. Currently the Lead Principal Software Engineer at Gusto, spearheading R&D initiatives within the AI Core Platform team to integrate AI and LLM technologies into Gusto's suite of products. Gusto is a premier cloud-based platform catering to payroll and benefits needs for small and medium-sized businesses. Open to advisory roles, board positions, and other exciting opportunities.
+Armando Murga [[LinkedIn]](https://linkedin.com/in/armandomurga) is a seasoned technical leader with 15+ years of expertise in full-stack development and AI engineering. Currently the Head of AI Engineering at Lumos, leading R&D initiatives to integrate AI and LLM technologies into the Lumos Autonomous suite. Lumos is the First Autonomous Identity Platform to eliminate sprawl and identity fatigue [[Lumos Website]](https://www.lumos.com).
+
+
+Open to advisory roles, board positions, and other exciting opportunities.

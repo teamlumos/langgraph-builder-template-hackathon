@@ -8,4 +8,4 @@ else
     exit 1
 fi
 
-$PYTHON -m graph.src.agent.langgraph-studio
+uv run langgraph dev

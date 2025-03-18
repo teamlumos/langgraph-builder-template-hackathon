@@ -4,7 +4,7 @@ This agent returns a predefined response without using an actual LLM.
 """
 
 import asyncio
-from agent.graph import graph
+from graph.src.agent.graph import graph
 
 graph = graph()
 
