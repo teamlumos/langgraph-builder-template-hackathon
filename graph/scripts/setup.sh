@@ -8,5 +8,18 @@ else
     exit 1
 fi
 
-uv add --requirements $BASE_DIR/requirements/dev.txt
-$PYTHON $BASE_DIR/scripts/generate_pyproject.toml.py # Generate pyproject.toml with dependencies from dev.txt for LangStudio
+# Check for npm installation
+if ! command -v "npm" &>/dev/null; then
+    brew install npm
+else
+    echo "npm is already installed"
+fi
+
+# Check for nodemon installation
+if ! command -v "nodemon" &>/dev/null; then
+    npm i -g nodemon
+else
+    echo "nodemon is already installed"
+fi
+
+uv sync --extra dev --project $BASE_DIR

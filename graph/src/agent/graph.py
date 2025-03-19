@@ -11,14 +11,15 @@ from langgraph.graph import StateGraph
 from .configuration import Configuration
 from .state import State
 
+
 def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Start the agent."""
     return {"changeme": "done"}
 
+
 def graph() -> StateGraph:
     # Define a new graph
     workflow = StateGraph(State, config_schema=Configuration)
-
 
     # Add the nodes to the graph
     workflow.add_node("start", start)
