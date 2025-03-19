@@ -14,4 +14,5 @@ class State:
     for more information.
     """
 
+    input: str = ""
     changeme: str = "example"

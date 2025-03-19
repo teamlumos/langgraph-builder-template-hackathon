@@ -10,16 +10,16 @@ from graph.src.agent.graph import graph
 graph = graph()
 
 if __name__ == "__main__":
-
-    def sync_call():
-        # Sync call. Optionally use `graph.invoke_sync` if you need to run the graph synchronously.
-        result = graph.invoke({"changeme": "start"})
-        return result
-
-    async def async_call():
-        # Async call
-        result = await graph.ainvoke({"changeme": "start"})
-        return result
-
-    result = asyncio.run(async_call())
-    print(result, flush=True)
+    print("Starting the agent...")
+    
+    while True:
+        # Get user input from console
+        user_input = input("You: ")
+        
+        # Exit condition
+        if user_input.lower() in ['quit', 'exit', 'bye']:
+            print("Goodbye!")
+            break
+    
+        result = graph.invoke({"input": user_input})
+        print(result, flush=True)
