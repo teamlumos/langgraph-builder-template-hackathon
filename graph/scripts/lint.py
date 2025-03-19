@@ -24,8 +24,8 @@ import click
 )
 def lint(fix_imports, check):
     """Lint and check code style with black, flake8 and isort."""
-    skip = ["node_modules", "requirements", "migrations", "__pycache__"]
-    root_files = glob("../**/**/*.py")
+    skip = ["node_modules", "requirements", "migrations", "__pycache__", ".venv"]
+    root_files = glob("./**/*.py")
     root_directories = [
         name for name in next(os.walk("."))[1] if not name.startswith(".")
     ]
@@ -44,7 +44,7 @@ def lint(fix_imports, check):
 
     isort_args = []
     black_args = []
-    
+
     if check:
         isort_args.append("--check")
         black_args.append("--check")

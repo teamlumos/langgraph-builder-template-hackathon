@@ -7,6 +7,7 @@ from typing import Optional
 
 from langchain_core.runnables import RunnableConfig
 
+
 @dataclass(kw_only=True)
 class Configuration:
     """The configuration for the agent."""
@@ -16,7 +17,7 @@ class Configuration:
     # create assistants (https://langchain-ai.github.io/langgraph/cloud/how-tos/configuration_cloud/)
     # and when you invoke the graph
     my_configurable_param: str = "changeme"
-    
+
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None

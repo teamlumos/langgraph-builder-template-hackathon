@@ -1,7 +1,7 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "agent": "./src/agent/langgraph-studio.py:graph"
+    "agent": "./graph/src/agent/langgraph-studio.py:graph"
   },
   "env": ".env",
   "python_version": "3.11",

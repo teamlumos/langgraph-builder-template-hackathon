@@ -1,17 +1,23 @@
 BASE_DIR=$(dirname "$0")/..
 
 # Check for Python installation
-if command -v python3 &>/dev/null; then
-    PYTHON=python3
-elif command -v python &>/dev/null; then
-    PYTHON=python
+if command -v "uv" &>/dev/null; then
+    PYTHON="uv run --project $BASE_DIR python"
 else
     echo "Python is not installed. Please install Python."
     exit 1
 fi
 
-$PYTHON -m venv $BASE_DIR/.venv
-source $BASE_DIR/.venv/bin/activate
+# Check for nodemon installation
+if ! command -v nodemon &>/dev/null; then
+    echo "Installing nodemon for hot-reloading..."
+    npm install -g nodemon
+fi
 
-cd $BASE_DIR/src
-$PYTHON -m agent.langgraph-studio
+# Run services concurrently with hot-reloading
+nodemon --exec "$PYTHON -m graph.src.agent.langgraph-studio" --watch "graph/" --ext "py"
+
+# Trap SIGINT to kill all background processes
+trap "kill 0" SIGINT
+
+wait
