@@ -1,11 +1,7 @@
 def dev_req_research_prompt():
     PROMPT = """<goals>
-- Follow the context to research the API endpoints.
-- Identify authentication methods and implementation details.
-- Analyze pagination structure and parameters.
-- Locate OpenAPI Specification (OAS) references or Postman Collections or documentation links.
-- Provide the OpenAPI Specification (OAS) URL in the output.
-- Follow the output-format to generate the output.
+- Identify authentication methods 
+- Identify pagination structure and parameters
 </goals>
 
 <output-format>
@@ -20,6 +16,10 @@ def dev_req_research_prompt():
 | --- | --- |
 | ...fill in | ...fill in |
 
+
+## Pagination
+
+...fill in
 
 ## API Endpoints
 
@@ -41,7 +41,7 @@ def dev_req_research_prompt():
 
 ...fill in
 
-### OpenAPI Specification (OAS) URL
+## OpenAPI Specification (OAS) URL
 
 ...fill in
 

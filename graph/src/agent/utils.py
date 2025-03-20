@@ -10,8 +10,8 @@ def compose_prompt(
     Compose a prompt for a research agent.
     """
     if product_req_prompt:
-        return f"{pre_research}\n\n{sdk_prompt}\n\n{product_req_prompt}"
+        return f"{product_req_prompt}\n\n{pre_research}\n\n{sdk_prompt}"
     elif dev_req_prompt:
-        return f"{pre_research}\n\n{sdk_prompt}\n\n{dev_req_prompt}"
+        return f"{dev_req_prompt}\n\n{pre_research}\n\n{sdk_prompt}"
     else:
         return f"{pre_research}\n\n{sdk_prompt}"

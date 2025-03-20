@@ -10,18 +10,14 @@ from pathlib import Path
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 
-from gpt_researcher import GPTResearcher
 import asyncio
 
 from .configuration import Configuration
 from .state import State
-from graph.src.prompts.product_req_research import product_req_research_prompt
-from graph.src.prompts.sdk_open_api import initial_read_prompt
-from graph.src.prompts.pre_research import pre_research_prompt
 
 import time
 
-from graph.src.agent.agent import PreResearchAgent, ProductReqResearchAgent, DevReqResearchAgent
+from graph.src.agent.agent import PreResearchAgent, ProductReqResearchAgent, DevReqResearchAgent, OASRetrievalAgent
 
 def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Start the agent."""
@@ -61,7 +57,7 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
         
     pre_research_report = asyncio.run(pre_research())
 
-    time.sleep(20)
+    time.sleep(5)
 
 
     # 2. Do a product requirements research
@@ -80,7 +76,7 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
 
     product_req_report = asyncio.run(product_req_research())
 
-    time.sleep(20)
+    time.sleep(5)
 
     # 3. Do a developer requirements research
     dev_req_research_agent = DevReqResearchAgent(agent, service_name, [state.url], pre_research_report)
@@ -99,12 +95,28 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
     dev_req_report = asyncio.run(dev_req_research())
     
     # TODO: 3. retrieve OAS/Postman collection (currently manually done)
+    oas_retrieval_agent = OASRetrievalAgent("gpt-4o", service_name, [state.url])
+
+    async def oas_retrieval() -> str:
+        try:
+            _, oas_retrieval_report = await oas_retrieval_agent.research()
+            print(oas_retrieval_report)
+            Path("oas_retrieval_report.md").write_text(oas_retrieval_report)
+        except Exception as e:
+            print(f"Error in OAS retrieval: {e}")
+            raise e
+        
+        return oas_retrieval_report
+    
+    oas_retrieval_report = asyncio.run(oas_retrieval())
 
     return {
         # "product_req_research_result": product_req_research_result, 
         "product_req_report": product_req_report,
         # "dev_req_research_result": dev_req_research_result,
-        "dev_req_report": dev_req_report
+        "dev_req_report": dev_req_report,
+        # "oas_retrieval_result": oas_retrieval_result,
+        "oas_retrieval_report": oas_retrieval_report
     }
 
 
