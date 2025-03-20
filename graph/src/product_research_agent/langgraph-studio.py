@@ -5,7 +5,7 @@ This agent returns a predefined response without using an actual LLM.
 
 from pathlib import Path
 
-from graph.src.agent.graph import graph
+from graph.src.product_research_agent.graph import graph
 
 compiled_graph = graph()
 

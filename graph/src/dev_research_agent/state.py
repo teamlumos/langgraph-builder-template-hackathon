@@ -15,9 +15,5 @@ class State:
     """
 
     input: str = ""
-<<<<<<<< HEAD:graph/src/product_research_agent/state.py
     url: str = ""
-========
-    urls: str = ""
->>>>>>>> team-2:graph/src/dev_research_agent/state.py
     changeme: str = "example"

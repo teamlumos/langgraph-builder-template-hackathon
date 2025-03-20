@@ -98,12 +98,9 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
     from gpt_researcher import GPTResearcher
     import asyncio
 
-<<<<<<<< HEAD:graph/src/product_research_agent/graph.py
     prompt = initial(state.url, state.input)
     researcher = GPTResearcher(query=prompt, report_type="custom_report", agent="gpt-4o-mini", source_urls=[state.url])
-========
-    researcher = GPTResearcher(query=get_improved_prompt(state.input, state.urls), report_type="custom_report", agent="gpt-4o-mini")
->>>>>>>> team-2:graph/src/dev_research_agent/graph.py
+
 
     async def run_async():
         research_result = await researcher.conduct_research()
