@@ -1,4 +1,4 @@
-full = """openapi: 3.0.0
+full_api_spec = """openapi: 3.0.0
 info:
   title: Lumos Connectors
   description: |-

@@ -15,7 +15,7 @@ if ! command -v nodemon &>/dev/null; then
 fi
 
 # Run services concurrently with hot-reloading
-nodemon --exec "$PYTHON -m graph.src.dev_research_agent.langgraph-studio" --watch "graph/" --ext "py"
+nodemon --exec "$PYTHON -m graph.src.agent.langgraph-studio" --watch "graph/" --ext "py"
 
 # Trap SIGINT to kill all background processes
 trap "kill 0" SIGINT
