@@ -1,3 +1,23 @@
+def initial_read_prompt(service_name: str):
+  prompt = """
+Here is the OAS for the connectors API. We will be implementing a connector with READ capabilities on an external API - {service_name}.
+
+<domain-intro>
+{sdk_api_spec_intro}
+</domain-intro>
+
+<read-models>
+{sdk_api_spec_read_models}
+</read-models>
+
+<read-capabilities>
+{sdk_api_spec_read_capabilities}
+</read-capabilities>
+"""
+
+  return prompt
+
+
 sdk_api_spec_intro = """openapi: 3.0.0
 info:
   title: Lumos Connectors

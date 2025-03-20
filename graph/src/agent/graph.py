@@ -16,7 +16,7 @@ import asyncio
 from .configuration import Configuration
 from .state import State
 from graph.src.prompts.product_req_research import product_req_research_prompt
-from graph.src.prompts.sdk_open_api import full_api_spec
+from graph.src.prompts.sdk_open_api import initial_read_prompt
 
 def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Start the agent."""
@@ -33,14 +33,18 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Research the agent."""
 
     print("Researching the agent...")
+    service_name = state.input
+
+    # 0. Do an initial read of the OAS
+    initial_sdk_read_prompt = initial_read_prompt(service_name=service_name)
 
     # 1. Do a product requirements research
-    product_req_prompt = product_req_research_prompt(
-        service_name=state.input, 
-        open_api_spec=full_api_spec
-    )
+    product_req_prompt = product_req_research_prompt(service_name=service_name)
+
+    prompt = f"{initial_sdk_read_prompt}\n\n{product_req_prompt}"
+    print(prompt)
     product_req_researcher = GPTResearcher(
-        query=product_req_prompt, 
+        query=prompt, 
         report_type="custom_report", 
         agent="gpt-4o-mini", 
         source_urls=[state.url],
@@ -53,6 +57,7 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
         return research_result, report
 
     product_req_research_result, product_req_report = asyncio.run(run_product_req_researcher_async())
+    print(product_req_report)
     Path("product_req_report.md").write_text(product_req_report)
 
     # 2. Do a developer requirements research

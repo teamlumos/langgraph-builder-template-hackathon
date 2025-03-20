@@ -1,4 +1,4 @@
-def product_req_research_prompt(service_name: str, open_api_spec: str):
+def product_req_research_prompt(service_name: str):
     PROMPT = f"""<goals>
 - Deeply understand how {service_name} works, and common use cases people use the {service_name} for.
 - Identify the differences between the product tiers, specifically how it relates to features provided, as well as API access differences.
@@ -7,10 +7,6 @@ def product_req_research_prompt(service_name: str, open_api_spec: str):
 - Create a complete overview of what is the service used for, what does the service do, what is the relevance and usage of identities and accounts (users, groups, roles, entitlements, access), and what limitations apply to {service_name}.
 - Focus solely on source URLs and include them in the output.
 </goals>
-
-<domain-context>
-{open_api_spec}
-</domain-context>
 
 <output-format>
 ## Resources & Entitlement Diagram + Details
