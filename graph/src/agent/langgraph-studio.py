@@ -3,23 +3,19 @@
 This agent returns a predefined response without using an actual LLM.
 """
 
-import asyncio
+from pathlib import Path
 
 from graph.src.agent.graph import graph
 
-graph = graph()
+compiled_graph = graph()
 
 if __name__ == "__main__":
     print("Starting the agent...")
     
     while True:
         # Get user input from console
-        user_input = input("You: ")
+        url_input = input("docs URL: ")
+        service_input = input("Service name: ")
         
-        # Exit condition
-        if user_input.lower() in ['quit', 'exit', 'bye']:
-            print("Goodbye!")
-            break
-    
-        result = graph.invoke({"input": user_input})
-        print(result, flush=True)
+        result = compiled_graph.invoke({"input": service_input, "url": url_input})
+

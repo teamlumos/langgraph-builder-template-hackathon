@@ -3,13 +3,15 @@
 This agent returns a predefined response without using an actual LLM.
 """
 
-from typing import Any, Dict, Literal
+from typing import Any, Dict
+from pathlib import Path
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 
 from .configuration import Configuration
 from .state import State
+from .prompts.understanding_the_service import initial
 
 def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Start the agent."""
@@ -29,7 +31,8 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
     from gpt_researcher import GPTResearcher
     import asyncio
 
-    researcher = GPTResearcher(query=state.input, report_type="research_report", agent="gpt-4o-mini")
+    prompt = initial(state.url, state.input)
+    researcher = GPTResearcher(query=prompt, report_type="custom_report", agent="gpt-4o-mini", source_urls=[state.url])
 
     async def run_async():
         research_result = await researcher.conduct_research()
@@ -38,12 +41,11 @@ def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
         return research_result, report
 
     research_result, report = asyncio.run(run_async())
-    print(research_result, flush=True)
-    print(report, flush=True)
+    Path("report.md").write_text(report)
     return {"research_result": research_result, "report": report}
 
 
-def graph() -> StateGraph:
+def graph():
     # Define a new graph
     workflow = StateGraph(State, config_schema=Configuration)
 
