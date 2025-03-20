@@ -17,6 +17,11 @@ from .configuration import Configuration
 from .state import State
 from graph.src.prompts.product_req_research import product_req_research_prompt
 from graph.src.prompts.sdk_open_api import initial_read_prompt
+from graph.src.prompts.pre_research import pre_research_prompt
+
+import time
+
+from graph.src.agent.agent import PreResearchAgent, ProductReqResearchAgent, DevReqResearchAgent
 
 def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Start the agent."""
@@ -32,65 +37,74 @@ def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
 def research(state: State, config: RunnableConfig) -> Dict[str, Any]:
     """Research the agent."""
 
-    print("Researching the agent...")
+    # agent = "gpt-4o"
+    # agent = "google_genai:gemini-1.5-pro"
+    agent = "anthropic:claude-3-7-sonnet-latest"
     service_name = state.input
 
-    # 0. Do an initial read of the OAS
-    initial_sdk_read_prompt = initial_read_prompt(service_name=service_name)
+    print("Starting research...\nSCRAPER: ", os.getenv("SCRAPER"))
 
-    # 1. Do a product requirements research
-    product_req_prompt = product_req_research_prompt(service_name=service_name)
+    # 0. Initialize 
+    pre_research_agent = PreResearchAgent(agent, service_name, [state.url])
 
-    prompt = f"{initial_sdk_read_prompt}\n\n{product_req_prompt}"
-    print(prompt)
-    product_req_researcher = GPTResearcher(
-        query=prompt, 
-        report_type="custom_report", 
-        agent="gpt-4o-mini", 
-        source_urls=[state.url],
-    )
+    # 1. Do a pre-research
+    async def pre_research() -> str:
+        try:
+            _, pre_research_report = await pre_research_agent.research()
+            print(pre_research_report)
+            Path("pre_research_report.md").write_text(pre_research_report)
+        except Exception as e:
+            print(f"Error in pre-research: {e}")
+            raise e
+        
+        return pre_research_report
+        
+    pre_research_report = asyncio.run(pre_research())
 
-    async def run_product_req_researcher_async():
-        research_result = await product_req_researcher.conduct_research()
-        report = await product_req_researcher.write_report()
+    time.sleep(20)
 
-        return research_result, report
 
-    product_req_research_result, product_req_report = asyncio.run(run_product_req_researcher_async())
-    print(product_req_report)
-    Path("product_req_report.md").write_text(product_req_report)
+    # 2. Do a product requirements research
+    product_req_research_agent = ProductReqResearchAgent(agent, service_name, [state.url], pre_research_report)
 
-    # 2. Do a developer requirements research
-    # dev_req_prompt = dev_req_research_prompt(
-    #     service_name=state.input, 
-    #     context=product_req_report,
-    #     open_api_spec=full_api_spec
-    # )
+    async def product_req_research() -> str:
+        try:
+            _, product_req_report = await product_req_research_agent.research()
+            print(product_req_report)
+            Path("product_req_report.md").write_text(product_req_report)
+        except Exception as e:
+            print(f"Error in product requirements research: {e}")
+            raise e
+        
+        return product_req_report
 
-    # dev_req_researcher = GPTResearcher(
-    #     query=dev_req_prompt, 
-    #     report_type="custom_report", 
-    #     agent="gpt-4o-mini", 
-    #     source_urls=[state.url],
-    # )
+    product_req_report = asyncio.run(product_req_research())
 
-    # async def run_dev_req_researcher_async():
-    #     research_result = await dev_req_researcher.conduct_research()
-    #     report = await dev_req_researcher.write_report()
+    time.sleep(20)
 
-    #     return research_result, report
+    # 3. Do a developer requirements research
+    dev_req_research_agent = DevReqResearchAgent(agent, service_name, [state.url], pre_research_report)
 
-    # dev_req_research_result, dev_req_report = asyncio.run(run_dev_req_researcher_async())
-    # Path("dev_req_report.md").write_text(dev_req_report)
+    async def dev_req_research() -> str:
+        try:
+            _, dev_req_report = await dev_req_research_agent.research()
+            print(dev_req_report)
+            Path("dev_req_report.md").write_text(dev_req_report)
+        except Exception as e:
+            print(f"Error in developer requirements research: {e}")
+            raise e
+        
+        return dev_req_report
+
+    dev_req_report = asyncio.run(dev_req_research())
     
-    # TODO: 3. retrieve OAS/Postman collection and narrow down the OAS found
-    # ...
+    # TODO: 3. retrieve OAS/Postman collection (currently manually done)
 
     return {
-        "product_req_research_result": product_req_research_result, 
+        # "product_req_research_result": product_req_research_result, 
         "product_req_report": product_req_report,
         # "dev_req_research_result": dev_req_research_result,
-        # "dev_req_report": dev_req_report
+        "dev_req_report": dev_req_report
     }
 
 
