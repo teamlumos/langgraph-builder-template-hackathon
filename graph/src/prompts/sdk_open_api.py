@@ -1,4 +1,4 @@
-full_api_spec = """openapi: 3.0.0
+sdk_api_spec_intro = """openapi: 3.0.0
 info:
   title: Lumos Connectors
   description: |-
@@ -204,45 +204,10 @@ info:
     - Tokens may encode various information (page numbers, cursors, etc.)
     - The same page size should be used throughout a pagination sequence
     - Invalid or expired tokens will result in an error response
-  version: 0.0.0
-tags:
-  - name: Learning about connectors
-  - name: Open API Specification
-  - name: Read Capabilities
-  - name: OAuth Capabilities
-  - name: Write Capabilities
-paths:
-  /list-connector-app-ids:
-    post:
-      operationId: list_connector_app_ids
-      description: |-
-        List all available connector app IDs.
+"""
 
-        Returns a list of connector identifiers that can be used with this API. Each ID represents
-        a specific third-party connector (e.g., "pagerduty", "activedirectory", "netsuite").
-        This operation is typically the first step in working with the API, as the connector ID
-        is required for most other operations.
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - response
-                properties:
-                  response:
-                    type: array
-                    items:
-                      type: string
-                  raw_data: {}
-                  page:
-                    $ref: '#/components/schemas/Page'
-                description: Response containing the main response payload, raw data, and pagination information.
-      tags:
-        - Learning about connectors
+sdk_api_spec_write_capabilities = """
+paths:
   /{connector_id}/activate_account:
     post:
       operationId: activate_account
@@ -317,47 +282,6 @@ paths:
                         not specified by the capability schema.
                   description: Generic request model.
               description: Authenticated request.
-  /{connector_id}/app_info:
-    post:
-      operationId: app_info
-      description: |-
-        Info capability that can be mutated based on its input,
-        eg. the apps authentication parameters and settings.
-        Returns basic information and the OAS specification of the particular app.
-
-        This operation is currently used in:
-        - http-server /docs and /redoc endpoints
-        - CI/CD actions like OASDiff
-
-        In the future, this can be used for:
-        - Connected info
-        - Schema validation, type safety, etc.
-        - In place of the static info
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/AppInfoResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Open API Specification
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              allOf:
-                - $ref: '#/components/schemas/AppInfoRequest'
   /{connector_id}/assign_entitlement:
     post:
       operationId: assign_entitlement
@@ -411,87 +335,6 @@ paths:
                     request:
                       allOf:
                         - $ref: '#/components/schemas/AssignEntitlement'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/connected_info:
-    post:
-      operationId: get_connected_info
-      description: |-
-        Gets the connected info of a connector given.
-
-        This operation retrieves the connected info of a connector given the
-        credentials and settings. This is only used if the connector has
-        aspects of it's info response that change based on the credentials and settings.
-
-        IMPORTANT:
-        This only need to be implemented if the connector
-        has elements of it's info response that are dependent on the credentials and settings.
-        Examples:
-        - A connector that only has the ability to suspend accounts if given a write capable api token
-        - A connector that has resource types that can only be determined via an api call
-
-        If not implemented, the static info response can be used.
-
-        This endpoint should be called:
-        - Any time you need an element of the info response and the connector implements this capability
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/GetConnectedInfoResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/GetConnectedInfo'
                       description: The main request payload.
                     include_raw_data:
                       type: boolean
@@ -724,680 +567,6 @@ paths:
                         not specified by the capability schema.
                   description: Generic request model.
               description: Authenticated request.
-  /{connector_id}/find_entitlement_associations:
-    post:
-      operationId: find_entitlement_associations
-      description: |-
-        Find associations between entitlements and resources in an integration system.
-
-        This operation retrieves the relationships between entitlements and their associated resources
-        in the third-party system. An entitlement represents a relationship that can be associated
-        with a user account, such as group memberships, role assignments, or workspace access.
-
-        The resource context helps identify the specific entity (like workspace, organization, etc.)
-        under which the entitlement exists. For global entitlements, the resource ID should be empty.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/FindEntitlementAssociationsResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/FindEntitlementAssociations'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/get_authorization_url:
-    post:
-      operationId: get_authorization_url
-      description: |-
-        Get OAuth authorization URL for a connector.
-
-        Constructs and returns the OAuth 2.0 authorization URL for the specified connector.
-        This URL can be used to direct users to the authorization page where they can grant
-        access to their account. Upon authorization completion, users will be redirected to
-        the specified callback URL.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/GetAuthorizationUrlResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - OAuth Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GetAuthorizationUrlRequest'
-  /{connector_id}/get_last_activity:
-    post:
-      operationId: get_last_activity
-      description: |-
-        Retrieve the last activity information for specified user accounts.
-
-        Activity data may include last login or last usage.
-
-        This can be useful for:
-        - Identifying inactive accounts
-        - Tracking last login dates and methods
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/GetLastActivityResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/GetLastActivity'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/handle_authorization_callback:
-    post:
-      operationId: handle_authorization_callback
-      description: |-
-        Handle Authorization Callback
-
-        This operation processes the OAuth callback to exchange the authorization code for access and refresh tokens.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/HandleAuthorizationCallbackResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - OAuth Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/HandleAuthorizationCallbackRequest'
-  /{connector_id}/handle_client_credentials_request:
-    post:
-      operationId: handle_client_credentials_request
-      description: |-
-        Handle Client Credentials Request
-
-        This operation processes a client credentials request to obtain an access token, and optionally, a refresh token.
-        It is used in third-party integrations that only support the Client Credentials OAuth 2.0 flow,
-        sometimes called the "machine-to-machine flow" or "two-legged flow".
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/HandleClientCredentialsResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - OAuth Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/HandleClientCredentialsRequest'
-  /{connector_id}/info:
-    post:
-      operationId: info
-      description: |-
-        Retrieve information about a specific connector.
-
-        This operation is typically used during:
-        - Initial connector setup and configuration
-        - Runtime capability discovery
-        - Schema validation and type checking
-        - Documentation generation
-        - Connector health checks
-
-        The response includes comprehensive metadata that helps understand
-        the connector's capabilities and requirements.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/InfoResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Learning about connectors
-  /{connector_id}/list_accounts:
-    post:
-      operationId: list_accounts
-      description: |-
-        Retrieve a list of accounts associated with the specified credentials. Response will include only active and suspended account.
-
-        Common use cases include:
-        - Auditing connected accounts
-        - Account discovery and synchronization
-
-        The request body allows for optional specification of custom attributes to include in the response.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ListAccountsResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ListAccounts'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/list_custom_attributes_schema:
-    post:
-      operationId: list_custom_attributes_schema
-      description: Retrieve the schema definition for all custom attributes supported by this connector.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ListCustomAttributesSchemaResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Learning about connectors
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ListCustomAttributesSchema'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/list_entitlements:
-    post:
-      operationId: list_entitlements
-      description: |-
-        List all entitlements available in the connected system.
-
-        The response includes details about each entitlement including:
-        - The type of entitlement (e.g. group, role, workspace)
-        - The resource it applies to (empty string for global resource)
-        - Integration-specific identifiers
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ListEntitlementsResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ListEntitlements'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/list_expenses:
-    post:
-      operationId: list_expenses
-      description: |-
-        Retrieve a list of reimbursements and/or card transactions
-
-        Common use cases include:
-        - Tracking overall software spend
-        - Identifying "rogue" employee spend
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ListExpensesResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ListExpenses'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/list_resources:
-    post:
-      operationId: list_resources
-      description: |-
-        List all resources available in the connected system.
-
-        The response includes details about each resource including:
-        - The type of resource (e.g. workspace, team, repository)
-        - Integration-specific identifier
-        - Human readable label
-
-        Resources help establish the contextual hierarchy for entitlements, showing which entities
-        can contain or be assigned different types of access controls.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ListResourcesResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ListResources'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/refresh_access_token:
-    post:
-      operationId: refresh_access_token
-      description: |-
-        Refresh Access Token
-
-        Get a new access token (and possibly new refresh token) using the previous refresh token.
-        It is used when the current access token expires, ensuring seamless access to the API.
-        Lumos systems attempt to only make one of these calls at a time per app tenant.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/RefreshAccessTokenResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - OAuth Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - request
-              properties:
-                request:
-                  allOf:
-                    - $ref: '#/components/schemas/RefreshAccessToken'
-                  description: The main request payload.
-                include_raw_data:
-                  type: boolean
-                  description: Whether to include raw data in the response.
-                page:
-                  allOf:
-                    - $ref: '#/components/schemas/Page'
-                  description: Pagination information for the request.
-                settings:
-                  type: object
-                  additionalProperties: {}
-                  description: |-
-                    Connector-specific settings for the request.
-
-                    These are settings that are shared across all capabilities.
-
-                    Usually contain additional required configuration options
-                    not specified by the capability schema.
-              description: Generic request model.
   /{connector_id}/unassign_entitlement:
     post:
       operationId: unassign_entitlement
@@ -1465,385 +634,10 @@ paths:
                         not specified by the capability schema.
                   description: Generic request model.
               description: Authenticated request.
-  /{connector_id}/update_account:
-    post:
-      operationId: update_account
-      description: |-
-        Update an existing user account in the third-party system.
 
-        This operation updates an existing user account with the specified ID. Connectors are expected
-        to extend the type UpdateableAccount and use it as both the request payload and the response
-        payload. E.g. if the specific app requires email, that should be exposed as an optional string
-        when updating, and a required string when returning the result.
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/UpdateAccountResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Write Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/UpdateableAccount'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
+"""
 
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-  /{connector_id}/validate_credentials:
-    post:
-      operationId: validate_credentials
-      description: |-
-        Validate the customer's credentials and retrieve tenant information.
-
-        This operation verifies that the credentials provided by the customer are valid and active.
-        It also retrieves identifying information about the customer's tenant/organization in the
-        integrated application.
-
-        The credentials could have been obtained through various means, such as:
-        - OAuth flow
-        - API keys
-        - Username/password
-        - Service account credentials
-
-        This endpoint should be called:
-        - After obtaining new credentials to verify they work
-        - Before performing other operations to ensure credentials are still valid
-        - To get the tenant identifier needed for other operations
-      parameters:
-        - name: connector_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ValidateCredentialsResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
-      tags:
-        - Read Capabilities
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auth:
-                  allOf:
-                    - $ref: '#/components/schemas/AuthCredential'
-                  description: The authentication credentials for the request.
-                credentials:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuthCredential'
-              allOf:
-                - type: object
-                  required:
-                    - request
-                  properties:
-                    request:
-                      allOf:
-                        - $ref: '#/components/schemas/ValidateCredentials'
-                      description: The main request payload.
-                    include_raw_data:
-                      type: boolean
-                      description: Whether to include raw data in the response.
-                    page:
-                      allOf:
-                        - $ref: '#/components/schemas/Page'
-                      description: Pagination information for the request.
-                    settings:
-                      type: object
-                      additionalProperties: {}
-                      description: |-
-                        Connector-specific settings for the request.
-
-                        These are settings that are shared across all capabilities.
-
-                        Usually contain additional required configuration options
-                        not specified by the capability schema.
-                  description: Generic request model.
-              description: Authenticated request.
-components:
-  schemas:
-    AccountStatus:
-      type: string
-      enum:
-        - ACTIVE
-        - INACTIVE
-        - SUSPENDED
-        - DEPROVISIONED
-        - PENDING
-        - DELETED
-      description: Enum representing the possible statuses of an account.
-    AccountType:
-      type: string
-      enum:
-        - service
-        - user
-      description: Enum representing the types of accounts.
-    ActivateAccount:
-      type: object
-      required:
-        - account_id
-      properties:
-        account_id:
-          type: string
-          description: The unique identifier for the account in the third-party system that should be activated
-      description: Request payload for activating an account
-      x-capability-level: write
-    ActivateAccountResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/ActivatedAccount'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the status of the activated account.
-    ActivatedAccount:
-      type: object
-      required:
-        - status
-        - activated
-      properties:
-        status:
-          allOf:
-            - $ref: '#/components/schemas/AccountStatus'
-          description: The current status of the account after the activation attempt
-        activated:
-          type: boolean
-          description: Whether the account was successfully activated
-          deprecated: true
-      description: Details about the activated account
-    ActivityEventType:
-      type: string
-      enum:
-        - last_login
-        - last_activity
-      description: Enum representing types of activity events.
-    Amount:
-      type: object
-      required:
-        - amount
-        - currency
-      properties:
-        amount:
-          type: string
-          description: An amount, stored as a decimal string
-        currency:
-          type: string
-          description: A currency, in ISO 4217 format
-      description: An amount used in a financial system
-    AppCategory:
-      type: string
-      enum:
-        - HR_AND_LEARNING
-        - OFFICE_AND_LEGAL
-        - SALES_AND_SUPPORT
-        - COMMERCE_AND_MARKETPLACES
-        - IT_AND_SECURITY
-        - COMMUNICATION
-        - DESIGN_AND_CREATIVITY
-        - OTHER
-        - MARKETING_AND_ANALYTICS
-        - DEVELOPERS
-        - ACCOUNTING_AND_FINANCE
-        - COLLABORATION
-        - CONTENT_AND_SOCIAL_MEDIA
-        - INTERNAL
-        - EARLY_ACCESS
-      description: Enum representing different categories of applications.
-    AppInfo:
-      type: object
-      required:
-        - app_id
-        - app_schema
-      properties:
-        app_id:
-          type: string
-          example: o365
-        app_schema:
-          type: object
-          additionalProperties: {}
-          description: The connector OpenAPI specification
-          example:
-            openapi: 3.1.0
-            servers: []
-            paths: {}
-            components:
-              schemas: {}
-              securitySchemes: {}
-              parameters: {}
-              responses: {}
-              examples: {}
-    AppInfoRequest:
-      type: object
-      properties:
-        auth:
-          allOf:
-            - $ref: '#/components/schemas/AuthCredential'
-          description: The authentication credentials for the request.
-        credentials:
-          type: array
-          items:
-            $ref: '#/components/schemas/AuthCredential'
-      allOf:
-        - type: object
-          required:
-            - request
-          properties:
-            request:
-              allOf:
-                - $ref: '#/components/schemas/AppInfoRequestPayload'
-              description: The main request payload.
-            include_raw_data:
-              type: boolean
-              description: Whether to include raw data in the response.
-            page:
-              allOf:
-                - $ref: '#/components/schemas/Page'
-              description: Pagination information for the request.
-            settings:
-              type: object
-              additionalProperties: {}
-              description: |-
-                Connector-specific settings for the request.
-
-                These are settings that are shared across all capabilities.
-
-                Usually contain additional required configuration options
-                not specified by the capability schema.
-          description: Generic request model.
-      description: |-
-        Optionally authenticated app_info request.
-        Used for the app_info capability to optionally supply a authentication model.
-    AppInfoRequestPayload:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/EmptyButCreateAnyway'
-      x-capability-category: specification
-    AppInfoResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/AppInfo'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-    AssignEntitlement:
-      type: object
-      required:
-        - account_integration_specific_id
-        - resource_integration_specific_id
-        - resource_type
-        - entitlement_type
-        - entitlement_integration_specific_id
-      properties:
-        account_integration_specific_id:
-          type: string
-          description: The unique identifier for the account in the third-party system
-          x-semantic: account-id
-        resource_integration_specific_id:
-          type: string
-          description: The unique identifier for the resource in the third-party system that the entitlement will be assigned to
-        resource_type:
-          type: string
-          description: The type of resource being assigned the entitlement (e.g. "user", "team", "project")
-          x-resource-type: true
-        entitlement_type:
-          type: string
-          description: The type of entitlement being assigned (e.g. "license", "permission", "quota")
-          x-entitlement-type: true
-        entitlement_integration_specific_id:
-          type: string
-          description: The unique identifier for the specific entitlement in the third-party system
-      description: Request payload for assigning an entitlement
-      x-capability-level: write
-    AssignEntitlementResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/AssignedEntitlement'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the result of the entitlement assignment
-    AssignedEntitlement:
-      type: object
-      required:
-        - assigned
-      properties:
-        assigned:
-          type: boolean
-          description: This should only ever be true. If the assignment can't happen we expect an error.
-      description: Details about the entitlement assignment result
+sdk_api_spec_common_models = """
     AuthCredential:
       type: object
       properties:
@@ -1955,288 +749,11 @@ components:
           type: string
           description: An optional 1-2 sentence description of any unusual behaviors of the capability, rendered for the end user.
       description: The schema for a capability, including its input arguments and output.
-    CreateAccount:
-      type: object
-      required:
-        - entitlements
-      properties:
-        email:
-          type: string
-          description: The email address for the new account
-        username:
-          type: string
-          description: The username for the new account
-        given_name:
-          type: string
-          description: The user's first/given name
-        family_name:
-          type: string
-          description: The user's last/family name
-        user_status:
-          type: string
-          description: Initial status for the account (e.g. "active", "pending")
-        extra_data:
-          type: object
-          additionalProperties: {}
-          description: Additional connector-specific data needed for account creation
-        entitlements:
-          type: array
-          items:
-            $ref: '#/components/schemas/CreateAccountEntitlement'
-          description: |-
-            List of _required_ entitlements that must be set when an account is created.
-            This list is all entitlement types with a min > 0
-      description: Request payload for creating a new user account
-      x-capability-level: write
-    CreateAccountEntitlement:
-      type: object
-      required:
-        - entitlement_type
-        - integration_specific_id
-      properties:
-        integration_specific_resource_id:
-          type: string
-          description: |-
-            The unique identifier for the resource in the third-party system that the entitlement will be assigned to.
-            For global resources (e.g. global roles), this should be an empty string or leave blank.
-            For scoped resources (e.g. workspace-specific roles), this should be the resource ID (e.g. workspace ID).
-        entitlement_type:
-          type: string
-          description: Should match an entitlement type returned by this connector's info response
-          x-entitlement-type: true
-        integration_specific_id:
-          type: string
-          description: The unique identifier for the specific required entitlement in the third-party system
-      description: Required entitlement configuration for assigning permissions during account creation
-    CreateAccountResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/CreatedAccount'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the result of the account creation
-    CreatedAccount:
-      type: object
-      required:
-        - status
-        - created
-      properties:
-        id:
-          type: string
-          description: The ID of the created account
-          x-semantic: account-id
-        status:
-          allOf:
-            - $ref: '#/components/schemas/AccountStatus'
-          description: The current status of the created account
-        created:
-          type: boolean
-          enum:
-            - true
-          description: Legacy flag indicating successful account creation
-          deprecated: true
-      description: Details about the created account
-    CredentialConfig:
-      type: object
-      required:
-        - id
-        - type
-        - description
-      properties:
-        id:
-          type: string
-          description: |-
-            The ID of the authentication schema.
-            Must be unique within one app - no two AppAuths should share the same ID.
-          example: some_unique_id
-        type:
-          allOf:
-            - $ref: '#/components/schemas/AuthModel'
-          description: The authentication type, simplified identificator.
-        description:
-          type: string
-          description: |-
-            The markdown description of the authentication.
-            Used primarily for instructions provided to customers.
-          example: To obtain a `client_id` and `client_secret`, please contact the _Lumos_ team.
-        optional:
-          type: boolean
-          description: |-
-            Denotes whether this credential is optional, for example, if the integration can function just fine with one credential,
-            and another credential is not strictly required, eg. the app will operate under a limited scope.
-          default: false
-        input_model:
-          description: |-
-            The input model expected by the app to authenticate against the 3rd party service.
-            This is provided so that the default model can be overriden by the app.
-        oauth_settings:
-          description: |-
-            Oauth settings
-            OAuth settings define the behavior of the OAuth Module, each credential can then have its own specific settings
-            This is a way to configure multiple OAuth credentials.
-
-            Use the built-in OAuthConfig model (connector.oai.modules.oauth_module_types) to define the config object.
-      description: App authentication model, allowing an app to have multiple authentication schemas, identified by a string ID.
-    CustomAttributeCustomizedType:
-      type: string
-      enum:
-        - account
-        - entitlement
-      description: Enum representing the types that can be customized with attributes.
-    CustomAttributeSchema:
-      type: object
-      required:
-        - customized_type
-        - name
-        - attribute_type
-      properties:
-        customized_type:
-          allOf:
-            - $ref: '#/components/schemas/CustomAttributeCustomizedType'
-          description: The type of entity this custom attribute is for.
-        name:
-          type: string
-          description: The name of the custom attribute.
-        attribute_type:
-          allOf:
-            - $ref: '#/components/schemas/CustomAttributeType'
-          description: The data type of the custom attribute.
-      description: A schema for a custom attribute.
-    CustomAttributeType:
-      type: string
-      enum:
-        - string
-        - user
-      description: Enum representing the types of custom attributes.
-    DeactivateAccount:
-      type: object
-      required:
-        - account_id
-      properties:
-        account_id:
-          type: string
-          description: The unique identifier of the account to deactivate in the integration system
-          x-semantic: account-id
-      description: Request parameters for deactivating an account
-      x-capability-level: write
-    DeactivateAccountResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/DeactivatedAccount'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the result of the account deactivation
-    DeactivatedAccount:
-      type: object
-      required:
-        - status
-        - deactivated
-      properties:
-        status:
-          allOf:
-            - $ref: '#/components/schemas/AccountStatus'
-          description: The current status of the account after deactivation
-        deactivated:
-          type: boolean
-          description: Legacy flag indicating successful account deactivation
-          deprecated: true
-      description: Details about the deactivated account
-    DeleteAccount:
-      type: object
-      required:
-        - account_id
-      properties:
-        account_id:
-          type: string
-          description: The unique identifier of the account to delete in the integration system
-          x-semantic: account-id
-      description: Request parameters for deleting an account
-      x-capability-level: write
-    DeleteAccountResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/DeletedAccount'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the result of the account deletion
-    DeletedAccount:
-      type: object
-      required:
-        - status
-        - deleted
-      properties:
-        status:
-          allOf:
-            - $ref: '#/components/schemas/AccountStatus'
-          description: The current status of the account after deletion
-        deleted:
-          type: boolean
-          description: Legacy flag indicating successful account deletion
-          deprecated: true
-      description: Details about the deleted account
     EmptyButCreateAnyway:
       type: object
       description: |-
         This is a hack to force creation of types that extend this model, that
         otherwise don't have any properties but we still want the Python types for.
-    EntitlementType:
-      type: object
-      required:
-        - type_id
-        - type_label
-        - resource_type_id
-        - min
-      properties:
-        type_id:
-          type: string
-          description: A unique identifier for this entitlement type.
-        type_label:
-          type: string
-          description: A human-readable label for this entitlement type.
-        resource_type_id:
-          type: string
-          description: This must be the same string as a type_id from the declared resource types
-        min:
-          type: integer
-          format: uint32
-          description: |-
-            How many of this type of entitlement must be assigned?
-            If 1: all accounts must have have one.
-            If 0: this can be removed from an active account.
-        max:
-          type: integer
-          format: uint32
-          description: |-
-            How many of this type of entitlement can be assigned?
-            If 1: an account can only have one.
-            Otherwise, accounts can have many (up to the specified max, if there is one)
-      description: All the things we need to know about an entitlement type in this app.
-      example:
-        type_id: role
-        type_label: IAM role
-        resource_type_id: aws_account
-        min: 0
     Error:
       type: object
       required:
@@ -2330,324 +847,6 @@ components:
             - $ref: '#/components/schemas/Page'
           description: Pagination information, if applicable.
       description: Error details and metadata returned when an operation fails.
-    Expense:
-      type: object
-      required:
-        - id
-        - transaction_date
-        - total_amount
-        - seller
-        - description
-        - submitter
-        - type
-        - approval_status
-        - payment_status
-      properties:
-        id:
-          type: string
-          description: |-
-            A unique, stable identifier for an expense in the source system.
-            It is important that this does not change over time.
-        report_id:
-          type: string
-          description: A unique, stable identifier for the report that this expense is a part of, if available
-        transaction_date:
-          type: string
-          description: The original date in which an employee paid the seller, in ISO 8601 format
-        payment_date:
-          type: string
-          description: |-
-            The date in which the company paid the expense, whether to the seller or the employee,
-            in 8601 format
-        total_amount:
-          allOf:
-            - $ref: '#/components/schemas/Amount'
-          description: The total amount that the company owes for the expense
-        paid_amount:
-          allOf:
-            - $ref: '#/components/schemas/Amount'
-          description: The total amount that the company has paid for the expense so far
-        seller:
-          allOf:
-            - $ref: '#/components/schemas/Vendor'
-          description: The company that sold the product represented by the expense
-        description:
-          type: string
-          description: A description of the purchase
-        submitter:
-          allOf:
-            - $ref: '#/components/schemas/SpendUser'
-          description: The employee that submitted the expense
-        type:
-          allOf:
-            - $ref: '#/components/schemas/ExpenseType'
-          description: The type of expense, either `reimbursement` or `card_transaction`
-        approval_status:
-          allOf:
-            - $ref: '#/components/schemas/ExpenseApprovalStatus'
-          description: The current state of the expense's approval status
-        payment_status:
-          allOf:
-            - $ref: '#/components/schemas/ExpensePaymentStatus'
-          description: The current state of the expense's payment status
-        url:
-          type: string
-          description: A URL that directs the user to the expense in the source system
-        attributes:
-          type: object
-          additionalProperties: {}
-          description: Attributes specific to the source system, but not to the tenant
-        custom_attributes:
-          type: object
-          additionalProperties: {}
-          description: Attributes specific to the tenant
-      description: |-
-        A representation of an expense or card transaction. The fields provided here
-        are the most commonly occurring across all connectors.
-        For a complete list of fields specific to your connector, please
-        refer to the [info endpoint](#tag/Describe/operation/info).
-      example:
-        id: 2652b217-d686-4277-aad5-37320e9d9912
-        report_id: bfc896e8-4bca-4aa4-87df-6341b22ed44d
-        transaction_date: 2024-01-01T:00:00+00:00
-        payment_date: 2024-01-03T:00:00+00:00
-        total_amount:
-          amount: '100.00'
-          currency: USD
-        paid_amount:
-          amount: '100.00'
-          currency: USD
-        seller:
-          id: f2d8d6a7-1a1a-4b3d-a092-936a7b32a0b3
-          name: Adobe
-          description: A leading software company known for its creativity products
-        description: Creative Cloud for the Marketing team
-        submitter:
-          id: 6da0e939-9ba9-497c-bf05-a86e95cbbb49
-          email: harry@hogwarts.edu
-        type: reimbursement
-        approval_status:
-          display_value: Approved
-          normalized_value: approved
-        payment_status:
-          display_value: Paid
-          normalized_value: paid
-    ExpenseApprovalStatus:
-      type: object
-      required:
-        - normalized_value
-      properties:
-        id:
-          type: string
-          description: |-
-            A unique, stable identifier for the approval status, in the source system.
-            This will often exist when the source system has a concept of "custom" statuses
-        display_value:
-          type: string
-          description: A user-friendly display value for the approval status
-        value:
-          type: string
-          description: The raw value used in the source system
-        normalized_value:
-          allOf:
-            - $ref: '#/components/schemas/NormalizedExpenseApprovalStatus'
-          description: A normalized representation of approval status
-    ExpenseFilters:
-      type: object
-      properties:
-        transaction_date:
-          allOf:
-            - $ref: '#/components/schemas/TimeRange'
-          description: |-
-            Used to filter an expense sync to only expenses with a transaction_date that is
-            within a specific time range
-      description: Filters to restrict an expense sync
-    ExpensePaymentStatus:
-      type: object
-      required:
-        - normalized_value
-      properties:
-        id:
-          type: string
-          description: |-
-            A unique, stable identifier for the payment status, in the source system.
-            This will often exist when the source system has a concept of "custom" statuses
-        display_value:
-          type: string
-          description: A user-friendly display value for the payment status
-        value:
-          type: string
-          description: The raw value used in the source system
-        normalized_value:
-          allOf:
-            - $ref: '#/components/schemas/NormalizedExpensePaymentStatus'
-          description: A normalized representation of payment status
-    ExpenseType:
-      type: string
-      enum:
-        - reimbursement
-        - card_transaction
-      description: Enum representing the different types of expenses
-    FindEntitlementAssociations:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/EmptyButCreateAnyway'
-      description: |-
-        Request parameters for finding entitlement associations.
-        Currently accepts empty input.
-      x-capability-level: read
-    FindEntitlementAssociationsResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/FoundEntitlementAssociation'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the found entitlement associations
-    FoundAccountData:
-      type: object
-      required:
-        - integration_specific_id
-      properties:
-        integration_specific_id:
-          type: string
-          description: Integration specific identifier that uniquely identifies an account.
-          x-semantic: account-id
-        email:
-          type: string
-          description: The email address associated with the account.
-        given_name:
-          type: string
-          description: The given name (first name) of the account holder.
-        family_name:
-          type: string
-          description: The family name (last name) of the account holder.
-        username:
-          type: string
-          description: The username associated with the account.
-        user_status:
-          allOf:
-            - $ref: '#/components/schemas/AccountStatus'
-          description: The current status of the account.
-        extra_data:
-          type: object
-          additionalProperties: {}
-          description: Additional data specific to the connector that doesn't fit into the standard fields.
-        custom_attributes:
-          type: object
-          additionalProperties:
-            type: string
-          description: Custom attributes associated with the account. See the list_custom_attributes_schema capability.
-        account_type:
-          allOf:
-            - $ref: '#/components/schemas/AccountType'
-          description: The type of the account (e.g., service account or user account).
-      description: |-
-        A representation of a user within a connector. The fields provided here
-        are the most commonly occurring across all connectors.
-        For a complete list of fields specific to your connector, please
-        refer to the [info endpoint](#tag/Describe/operation/info).
-    FoundEntitlementAssociation:
-      type: object
-      required:
-        - account_id
-        - integration_specific_entitlement_id
-        - integration_specific_resource_id
-      properties:
-        account_id:
-          type: string
-          description: The ID of the account that has been granted the entitlement.
-          x-semantic: account-id
-        integration_specific_entitlement_id:
-          type: string
-          description: The ID of the entitlement that has been granted.
-        integration_specific_resource_id:
-          type: string
-          description: The ID of the resource to which the entitlement applies.
-      description: A link between a user account and their granted entitlement.
-    FoundEntitlementData:
-      type: object
-      required:
-        - entitlement_type
-        - integration_specific_id
-        - integration_specific_resource_id
-        - label
-      properties:
-        entitlement_type:
-          type: string
-          description: Should match a previously declared entitlement type from this connector.
-          x-entitlement-type: true
-        extra_data:
-          type: object
-          additionalProperties: {}
-          description: Additional data specific to the entitlement that doesn't fit into the standard fields.
-        integration_specific_id:
-          type: string
-          description: |-
-            The unique ID within this application of an entitlement.
-
-            May only be unique within the tenant and the entitlement type.
-        integration_specific_resource_id:
-          type: string
-          description: |-
-            The unique ID within this application of the resource this entitlement
-            is for.
-
-            See `FoundResourceData.integration_specific_resource_id`
-        is_assignable:
-          type: boolean
-          description: Indicates whether this entitlement can be assigned to users.
-        label:
-          type: string
-          description: A human-readable label for the entitlement.
-        custom_attributes:
-          type: object
-          additionalProperties:
-            type: string
-          description: Custom attributes associated with the entitlement. See the list_custom_attributes_schema capability.
-      description: An entitlement representing an authorization or permission that can be granted to users within the connector.
-      example:
-        entitlement_type: org_role
-        integration_specific_id: member
-        integration_specific_resource_id: ''
-        label: Org Member
-    FoundResourceData:
-      type: object
-      required:
-        - integration_specific_id
-        - label
-        - resource_type
-      properties:
-        integration_specific_id:
-          type: string
-          description: |-
-            The unique ID within this application of a resource.
-
-            May only be unique within the tenant and the resource type.
-
-            There will always be a global "account" (i.e. tenant) resource
-            for things like tenant-wide roles.
-        label:
-          type: string
-          description: A human-readable label for the resource.
-        resource_type:
-          type: string
-          description: Should match a previously declared resource type from this connector.
-          x-resource-type: true
-        extra_data:
-          type: object
-          additionalProperties:
-            type: string
-          description: Additional data specific to the resource that doesn't fit into the standard fields.
-      description: Resource data describing a resource within the connector.
     GetAuthorizationUrl:
       type: object
       required:
@@ -2723,27 +922,6 @@ components:
               $ref: '#/components/schemas/Page'
           description: Response containing the main response payload, raw data, and pagination information.
       description: Response containing the OAuth authorization URL and related data.
-    GetConnectedInfo:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/EmptyButCreateAnyway'
-      description: Parameters for getting connected info.
-    GetConnectedInfoResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/Info'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: |-
-        Response containing the connected info of the connector.
-        This should have the same structure as the info response.
     GetLastActivity:
       type: object
       required:
@@ -2910,101 +1088,6 @@ components:
               $ref: '#/components/schemas/Page'
           description: Response containing the main response payload, raw data, and pagination information.
       description: Response containing the OAuth credentials after handling a client credentials request.
-    Info:
-      type: object
-      required:
-        - app_id
-        - version
-        - capabilities
-        - capability_schema
-        - authentication_schema
-        - credentials_schema
-        - entitlement_types
-        - resource_types
-        - request_settings_schema
-      properties:
-        app_id:
-          type: string
-          description: A unique ID for this connector, that computers read.
-          example: o365
-        version:
-          type: string
-          description: |-
-            A version string unique to a build of this connector.
-
-            This may look like semantic versioning, but that may
-            change in the future.
-          example: 3.2.10
-        capabilities:
-          type: array
-          items:
-            type: string
-          description: All capabilities provided by this connector.
-        capability_schema:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/CapabilitySchema'
-          description: A map of capability names to schemas (how to call them, what they return)
-        oauth_scopes:
-          type: object
-          additionalProperties:
-            type: string
-          description: OAuth scopes for this connector per capability, eg. dict[StandardCapabilityName, string]
-        authentication_schema:
-          type: object
-          additionalProperties: {}
-          description: A JSON schema for the "auth" field on requests.
-        credentials_schema:
-          type: array
-          items:
-            type: object
-            additionalProperties: {}
-          description: A JSON schema for the "credentials" field on requests.
-        logo_url:
-          type: string
-          description: A fully qualified URL to an image with this integration logo.
-        user_friendly_name:
-          type: string
-          description: The name of the app this is integrating with.
-          example: Microsoft Office 365
-        description:
-          type: string
-          description: 1-3 sentences describing the product/service the app provides
-          example: Patch is the direct-to-consumer brand for the people who need plants most – those who live and work in the city
-        categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/AppCategory'
-          description: Categories that this app belongs to.
-        entitlement_types:
-          type: array
-          items:
-            $ref: '#/components/schemas/EntitlementType'
-          description: A list of entitlement types supported by this connector.
-        resource_types:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceType'
-          description: A list of resource types supported by this connector.
-        request_settings_schema:
-          type: object
-          additionalProperties: {}
-          description: A JSON schema that tells clients how to send request.settings for this app.
-      description: Provides information about the connector.
-    InfoResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              $ref: '#/components/schemas/Info'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing information about the connector
     JWTClaims:
       type: object
       required:
@@ -3130,161 +1213,6 @@ components:
             type: string
           description: The JWT critical extension.
       description: JWT headers model.
-    LastActivityData:
-      type: object
-      required:
-        - account_id
-        - event_type
-        - happened_at
-      properties:
-        account_id:
-          type: string
-          description: The ID of the account.
-        event_type:
-          type: string
-          description: The type of activity event.
-        happened_at:
-          type: string
-          description: The timestamp when the activity occurred.
-      description: Last known activity data for a user account.
-    ListAccounts:
-      type: object
-      properties:
-        custom_attributes:
-          type: array
-          items:
-            type: string
-          description: |-
-            Optional array of custom attribute names to include in the account data.
-            Each string in this array represents a specific custom attribute to retrieve.
-      description: Request parameters for listing accounts.
-      x-capability-level: read
-    ListAccountsResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/FoundAccountData'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing information about the accounts
-    ListCustomAttributesSchema:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/EmptyButCreateAnyway'
-      description: Request parameters for listing custom attribute schemas.
-      x-capability-level: read
-    ListCustomAttributesSchemaResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/CustomAttributeSchema'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the schema definitions for all supported custom attributes
-    ListEntitlements:
-      type: object
-      properties:
-        custom_attributes:
-          type: array
-          items:
-            type: string
-          description: |-
-            Optional array of custom attribute names to include in the entitlement data.
-            Each string in this array represents a specific custom attribute to retrieve.
-            You can get these attributes from `list_custom_attributes_schema`
-      description: Request parameters for listing entitlements.
-      x-capability-level: read
-    ListEntitlementsResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/FoundEntitlementData'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the list of available entitlements and their details
-    ListExpenses:
-      type: object
-      required:
-        - filters
-      properties:
-        filters:
-          $ref: '#/components/schemas/ExpenseFilters'
-      description: Request parameters for listing expenses.
-    ListExpensesResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/Expense'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing information about the expenses
-    ListResources:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/EmptyButCreateAnyway'
-      description: Request parameters for listing resources.
-      x-capability-level: read
-    ListResourcesResponse:
-      type: object
-      allOf:
-        - type: object
-          required:
-            - response
-          properties:
-            response:
-              type: array
-              items:
-                $ref: '#/components/schemas/FoundResourceData'
-            raw_data: {}
-            page:
-              $ref: '#/components/schemas/Page'
-          description: Response containing the main response payload, raw data, and pagination information.
-      description: Response containing the list of available resources and their details
-    NormalizedExpenseApprovalStatus:
-      type: string
-      enum:
-        - pending
-        - approved
-        - rejected
-        - canceled
-        - unknown
-    NormalizedExpensePaymentStatus:
-      type: string
-      enum:
-        - paid
-        - unpaid
     OAuth1Credential:
       type: object
       required:
@@ -3534,40 +1462,6 @@ components:
               $ref: '#/components/schemas/Page'
           description: Response containing the main response payload, raw data, and pagination information.
       description: Response containing the OAuth credentials after refreshing an access token.
-    ResourceType:
-      type: object
-      required:
-        - type_id
-        - type_label
-      properties:
-        type_id:
-          type: string
-          description: A unique identifier for this resource type.
-        type_label:
-          type: string
-          description: A human-readable label for this resource type.
-      description: A type of resource in the connector.
-      example:
-        type_id: aws_account
-        type_label: AWS Account
-    SpendUser:
-      type: object
-      properties:
-        id:
-          type: string
-          description: An unique, stable identifier for the user, in the source system
-        email:
-          type: string
-          description: An email for the user
-        full_name:
-          type: string
-          description: The full name of the user
-        given_name:
-          type: string
-          description: The given name of the user
-        family_name:
-          type: string
-          description: The family name of the user
     StandardCapabilityName:
       type: string
       enum:
@@ -3632,6 +1526,269 @@ components:
       type: string
       enum:
         - bearer
+
+"""
+
+sdk_api_spec_write_models = """
+    ActivateAccount:
+      type: object
+      required:
+        - account_id
+      properties:
+        account_id:
+          type: string
+          description: The unique identifier for the account in the third-party system that should be activated
+      description: Request payload for activating an account
+      x-capability-level: write
+    ActivateAccountResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              $ref: '#/components/schemas/ActivatedAccount'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the status of the activated account.
+    ActivatedAccount:
+      type: object
+      required:
+        - status
+        - activated
+      properties:
+        status:
+          allOf:
+            - $ref: '#/components/schemas/AccountStatus'
+          description: The current status of the account after the activation attempt
+        activated:
+          type: boolean
+          description: Whether the account was successfully activated
+          deprecated: true
+      description: Details about the activated account
+    AssignEntitlement:
+      type: object
+      required:
+        - account_integration_specific_id
+        - resource_integration_specific_id
+        - resource_type
+        - entitlement_type
+        - entitlement_integration_specific_id
+      properties:
+        account_integration_specific_id:
+          type: string
+          description: The unique identifier for the account in the third-party system
+          x-semantic: account-id
+        resource_integration_specific_id:
+          type: string
+          description: The unique identifier for the resource in the third-party system that the entitlement will be assigned to
+        resource_type:
+          type: string
+          description: The type of resource being assigned the entitlement (e.g. "user", "team", "project")
+          x-resource-type: true
+        entitlement_type:
+          type: string
+          description: The type of entitlement being assigned (e.g. "license", "permission", "quota")
+          x-entitlement-type: true
+        entitlement_integration_specific_id:
+          type: string
+          description: The unique identifier for the specific entitlement in the third-party system
+      description: Request payload for assigning an entitlement
+      x-capability-level: write
+    AssignEntitlementResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              $ref: '#/components/schemas/AssignedEntitlement'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the result of the entitlement assignment
+    AssignedEntitlement:
+      type: object
+      required:
+        - assigned
+      properties:
+        assigned:
+          type: boolean
+          description: This should only ever be true. If the assignment can't happen we expect an error.
+      description: Details about the entitlement assignment result
+    CreateAccount:
+      type: object
+      required:
+        - entitlements
+      properties:
+        email:
+          type: string
+          description: The email address for the new account
+        username:
+          type: string
+          description: The username for the new account
+        given_name:
+          type: string
+          description: The user's first/given name
+        family_name:
+          type: string
+          description: The user's last/family name
+        user_status:
+          type: string
+          description: Initial status for the account (e.g. "active", "pending")
+        extra_data:
+          type: object
+          additionalProperties: {}
+          description: Additional connector-specific data needed for account creation
+        entitlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateAccountEntitlement'
+          description: |-
+            List of _required_ entitlements that must be set when an account is created.
+            This list is all entitlement types with a min > 0
+      description: Request payload for creating a new user account
+      x-capability-level: write
+    CreateAccountEntitlement:
+      type: object
+      required:
+        - entitlement_type
+        - integration_specific_id
+      properties:
+        integration_specific_resource_id:
+          type: string
+          description: |-
+            The unique identifier for the resource in the third-party system that the entitlement will be assigned to.
+            For global resources (e.g. global roles), this should be an empty string or leave blank.
+            For scoped resources (e.g. workspace-specific roles), this should be the resource ID (e.g. workspace ID).
+        entitlement_type:
+          type: string
+          description: Should match an entitlement type returned by this connector's info response
+          x-entitlement-type: true
+        integration_specific_id:
+          type: string
+          description: The unique identifier for the specific required entitlement in the third-party system
+      description: Required entitlement configuration for assigning permissions during account creation
+    CreateAccountResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              $ref: '#/components/schemas/CreatedAccount'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the result of the account creation
+    CreatedAccount:
+      type: object
+      required:
+        - status
+        - created
+      properties:
+        id:
+          type: string
+          description: The ID of the created account
+          x-semantic: account-id
+        status:
+          allOf:
+            - $ref: '#/components/schemas/AccountStatus'
+          description: The current status of the created account
+        created:
+          type: boolean
+          enum:
+            - true
+          description: Legacy flag indicating successful account creation
+          deprecated: true
+      description: Details about the created account
+    DeactivateAccount:
+      type: object
+      required:
+        - account_id
+      properties:
+        account_id:
+          type: string
+          description: The unique identifier of the account to deactivate in the integration system
+          x-semantic: account-id
+      description: Request parameters for deactivating an account
+      x-capability-level: write
+    DeactivateAccountResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              $ref: '#/components/schemas/DeactivatedAccount'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the result of the account deactivation
+    DeactivatedAccount:
+      type: object
+      required:
+        - status
+        - deactivated
+      properties:
+        status:
+          allOf:
+            - $ref: '#/components/schemas/AccountStatus'
+          description: The current status of the account after deactivation
+        deactivated:
+          type: boolean
+          description: Legacy flag indicating successful account deactivation
+          deprecated: true
+      description: Details about the deactivated account
+    DeleteAccount:
+      type: object
+      required:
+        - account_id
+      properties:
+        account_id:
+          type: string
+          description: The unique identifier of the account to delete in the integration system
+          x-semantic: account-id
+      description: Request parameters for deleting an account
+      x-capability-level: write
+    DeleteAccountResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              $ref: '#/components/schemas/DeletedAccount'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the result of the account deletion
+    DeletedAccount:
+      type: object
+      required:
+        - status
+        - deleted
+      properties:
+        status:
+          allOf:
+            - $ref: '#/components/schemas/AccountStatus'
+          description: The current status of the account after deletion
+        deleted:
+          type: boolean
+          description: Legacy flag indicating successful account deletion
+          deprecated: true
+      description: Details about the deleted account
     UnassignEntitlement:
       type: object
       required:
@@ -3710,6 +1867,386 @@ components:
           description: The value previously supplied by the integration as this account's Unique ID.
           x-semantic: account-id
       description: Request payload for updating a user account
+"""
+
+sdk_api_spec_read_models = """
+    AccountStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - SUSPENDED
+        - DEPROVISIONED
+        - PENDING
+        - DELETED
+      description: Enum representing the possible statuses of an account.
+    AccountType:
+      type: string
+      enum:
+        - service
+        - user
+      description: Enum representing the types of accounts.
+    ActivityEventType:
+      type: string
+      enum:
+        - last_login
+        - last_activity
+      description: Enum representing types of activity events.
+    EntitlementType:
+      type: object
+      required:
+        - type_id
+        - type_label
+        - resource_type_id
+        - min
+      properties:
+        type_id:
+          type: string
+          description: A unique identifier for this entitlement type.
+        type_label:
+          type: string
+          description: A human-readable label for this entitlement type.
+        resource_type_id:
+          type: string
+          description: This must be the same string as a type_id from the declared resource types
+        min:
+          type: integer
+          format: uint32
+          description: |-
+            How many of this type of entitlement must be assigned?
+            If 1: all accounts must have have one.
+            If 0: this can be removed from an active account.
+        max:
+          type: integer
+          format: uint32
+          description: |-
+            How many of this type of entitlement can be assigned?
+            If 1: an account can only have one.
+            Otherwise, accounts can have many (up to the specified max, if there is one)
+      description: All the things we need to know about an entitlement type in this app.
+      example:
+        type_id: role
+        type_label: IAM role
+        resource_type_id: aws_account
+        min: 0
+    FindEntitlementAssociations:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EmptyButCreateAnyway'
+      description: |-
+        Request parameters for finding entitlement associations.
+        Currently accepts empty input.
+      x-capability-level: read
+    FindEntitlementAssociationsResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/FoundEntitlementAssociation'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the found entitlement associations
+    FoundAccountData:
+      type: object
+      required:
+        - integration_specific_id
+      properties:
+        integration_specific_id:
+          type: string
+          description: Integration specific identifier that uniquely identifies an account.
+          x-semantic: account-id
+        email:
+          type: string
+          description: The email address associated with the account.
+        given_name:
+          type: string
+          description: The given name (first name) of the account holder.
+        family_name:
+          type: string
+          description: The family name (last name) of the account holder.
+        username:
+          type: string
+          description: The username associated with the account.
+        user_status:
+          allOf:
+            - $ref: '#/components/schemas/AccountStatus'
+          description: The current status of the account.
+        extra_data:
+          type: object
+          additionalProperties: {}
+          description: Additional data specific to the connector that doesn't fit into the standard fields.
+        custom_attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: Custom attributes associated with the account. See the list_custom_attributes_schema capability.
+        account_type:
+          allOf:
+            - $ref: '#/components/schemas/AccountType'
+          description: The type of the account (e.g., service account or user account).
+      description: |-
+        A representation of a user within a connector. The fields provided here
+        are the most commonly occurring across all connectors.
+        For a complete list of fields specific to your connector, please
+        refer to the [info endpoint](#tag/Describe/operation/info).
+    FoundEntitlementAssociation:
+      type: object
+      required:
+        - account_id
+        - integration_specific_entitlement_id
+        - integration_specific_resource_id
+      properties:
+        account_id:
+          type: string
+          description: The ID of the account that has been granted the entitlement.
+          x-semantic: account-id
+        integration_specific_entitlement_id:
+          type: string
+          description: The ID of the entitlement that has been granted.
+        integration_specific_resource_id:
+          type: string
+          description: The ID of the resource to which the entitlement applies.
+      description: A link between a user account and their granted entitlement.
+    FoundEntitlementData:
+      type: object
+      required:
+        - entitlement_type
+        - integration_specific_id
+        - integration_specific_resource_id
+        - label
+      properties:
+        entitlement_type:
+          type: string
+          description: Should match a previously declared entitlement type from this connector.
+          x-entitlement-type: true
+        extra_data:
+          type: object
+          additionalProperties: {}
+          description: Additional data specific to the entitlement that doesn't fit into the standard fields.
+        integration_specific_id:
+          type: string
+          description: |-
+            The unique ID within this application of an entitlement.
+
+            May only be unique within the tenant and the entitlement type.
+        integration_specific_resource_id:
+          type: string
+          description: |-
+            The unique ID within this application of the resource this entitlement
+            is for.
+
+            See `FoundResourceData.integration_specific_resource_id`
+        is_assignable:
+          type: boolean
+          description: Indicates whether this entitlement can be assigned to users.
+        label:
+          type: string
+          description: A human-readable label for the entitlement.
+        custom_attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: Custom attributes associated with the entitlement. See the list_custom_attributes_schema capability.
+      description: An entitlement representing an authorization or permission that can be granted to users within the connector.
+      example:
+        entitlement_type: org_role
+        integration_specific_id: member
+        integration_specific_resource_id: ''
+        label: Org Member
+    FoundResourceData:
+      type: object
+      required:
+        - integration_specific_id
+        - label
+        - resource_type
+      properties:
+        integration_specific_id:
+          type: string
+          description: |-
+            The unique ID within this application of a resource.
+
+            May only be unique within the tenant and the resource type.
+
+            There will always be a global "account" (i.e. tenant) resource
+            for things like tenant-wide roles.
+        label:
+          type: string
+          description: A human-readable label for the resource.
+        resource_type:
+          type: string
+          description: Should match a previously declared resource type from this connector.
+          x-resource-type: true
+        extra_data:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional data specific to the resource that doesn't fit into the standard fields.
+      description: Resource data describing a resource within the connector.
+    LastActivityData:
+      type: object
+      required:
+        - account_id
+        - event_type
+        - happened_at
+      properties:
+        account_id:
+          type: string
+          description: The ID of the account.
+        event_type:
+          type: string
+          description: The type of activity event.
+        happened_at:
+          type: string
+          description: The timestamp when the activity occurred.
+      description: Last known activity data for a user account.
+    ListAccounts:
+      type: object
+      properties:
+        custom_attributes:
+          type: array
+          items:
+            type: string
+          description: |-
+            Optional array of custom attribute names to include in the account data.
+            Each string in this array represents a specific custom attribute to retrieve.
+      description: Request parameters for listing accounts.
+      x-capability-level: read
+    ListAccountsResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/FoundAccountData'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing information about the accounts
+    ListCustomAttributesSchema:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EmptyButCreateAnyway'
+      description: Request parameters for listing custom attribute schemas.
+      x-capability-level: read
+    ListCustomAttributesSchemaResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomAttributeSchema'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the schema definitions for all supported custom attributes
+    ListEntitlements:
+      type: object
+      properties:
+        custom_attributes:
+          type: array
+          items:
+            type: string
+          description: |-
+            Optional array of custom attribute names to include in the entitlement data.
+            Each string in this array represents a specific custom attribute to retrieve.
+            You can get these attributes from `list_custom_attributes_schema`
+      description: Request parameters for listing entitlements.
+      x-capability-level: read
+    ListEntitlementsResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/FoundEntitlementData'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the list of available entitlements and their details
+    ListExpenses:
+      type: object
+      required:
+        - filters
+      properties:
+        filters:
+          $ref: '#/components/schemas/ExpenseFilters'
+      description: Request parameters for listing expenses.
+    ListExpensesResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/Expense'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing information about the expenses
+    ListResources:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EmptyButCreateAnyway'
+      description: Request parameters for listing resources.
+      x-capability-level: read
+    ListResourcesResponse:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - response
+          properties:
+            response:
+              type: array
+              items:
+                $ref: '#/components/schemas/FoundResourceData'
+            raw_data: {}
+            page:
+              $ref: '#/components/schemas/Page'
+          description: Response containing the main response payload, raw data, and pagination information.
+      description: Response containing the list of available resources and their details
+    ResourceType:
+      type: object
+      required:
+        - type_id
+        - type_label
+      properties:
+        type_id:
+          type: string
+          description: A unique identifier for this resource type.
+        type_label:
+          type: string
+          description: A human-readable label for this resource type.
+      description: A type of resource in the connector.
+      example:
+        type_id: aws_account
+        type_label: AWS Account
     ValidateCredentials:
       type: object
       allOf:
@@ -3758,19 +2295,478 @@ components:
 
             This ID should be stable and not change for the lifetime of the tenant.
       description: Result of credential validation containing validity and tenant information
-    Vendor:
-      type: object
-      properties:
-        id:
-          type: string
-          description: An identifier for a company, in a source system
-        name:
-          type: string
-          description: The name of a company
-        description:
-          type: string
-          description: A description of a company
-      description: An object representing a company
 """
 
+sdk_api_spec_read_capabilities = """
+paths:
+  /{connector_id}/validate_credentials:
+    post:
+      operationId: validate_credentials
+      description: |-
+        Validate the customer's credentials and retrieve tenant information.
 
+        This operation verifies that the credentials provided by the customer are valid and active.
+        It also retrieves identifying information about the customer's tenant/organization in the
+        integrated application.
+
+        The credentials could have been obtained through various means, such as:
+        - OAuth flow
+        - API keys
+        - Username/password
+        - Service account credentials
+
+        This endpoint should be called:
+        - After obtaining new credentials to verify they work
+        - Before performing other operations to ensure credentials are still valid
+        - To get the tenant identifier needed for other operations
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ValidateCredentialsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/ValidateCredentials'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+  /{connector_id}/find_entitlement_associations:
+    post:
+      operationId: find_entitlement_associations
+      description: |-
+        Find associations between entitlements and resources in an integration system.
+
+        This operation retrieves the relationships between entitlements and their associated resources
+        in the third-party system. An entitlement represents a relationship that can be associated
+        with a user account, such as group memberships, role assignments, or workspace access.
+
+        The resource context helps identify the specific entity (like workspace, organization, etc.)
+        under which the entitlement exists. For global entitlements, the resource ID should be empty.
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/FindEntitlementAssociationsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/FindEntitlementAssociations'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+  /{connector_id}/get_authorization_url:
+    post:
+      operationId: get_authorization_url
+      description: |-
+        Get OAuth authorization URL for a connector.
+
+        Constructs and returns the OAuth 2.0 authorization URL for the specified connector.
+        This URL can be used to direct users to the authorization page where they can grant
+        access to their account. Upon authorization completion, users will be redirected to
+        the specified callback URL.
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/GetAuthorizationUrlResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - OAuth Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAuthorizationUrlRequest'
+  /{connector_id}/get_last_activity:
+    post:
+      operationId: get_last_activity
+      description: |-
+        Retrieve the last activity information for specified user accounts.
+
+        Activity data may include last login or last usage.
+
+        This can be useful for:
+        - Identifying inactive accounts
+        - Tracking last login dates and methods
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/GetLastActivityResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/GetLastActivity'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+  /{connector_id}/list_accounts:
+    post:
+      operationId: list_accounts
+      description: |-
+        Retrieve a list of accounts associated with the specified credentials. Response will include only active and suspended account.
+
+        Common use cases include:
+        - Auditing connected accounts
+        - Account discovery and synchronization
+
+        The request body allows for optional specification of custom attributes to include in the response.
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ListAccountsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/ListAccounts'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+  /{connector_id}/list_entitlements:
+    post:
+      operationId: list_entitlements
+      description: |-
+        List all entitlements available in the connected system.
+
+        The response includes details about each entitlement including:
+        - The type of entitlement (e.g. group, role, workspace)
+        - The resource it applies to (empty string for global resource)
+        - Integration-specific identifiers
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ListEntitlementsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/ListEntitlements'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+  /{connector_id}/list_resources:
+    post:
+      operationId: list_resources
+      description: |-
+        List all resources available in the connected system.
+
+        The response includes details about each resource including:
+        - The type of resource (e.g. workspace, team, repository)
+        - Integration-specific identifier
+        - Human readable label
+
+        Resources help establish the contextual hierarchy for entitlements, showing which entities
+        can contain or be assigned different types of access controls.
+      parameters:
+        - name: connector_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ListResourcesResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Read Capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth:
+                  allOf:
+                    - $ref: '#/components/schemas/AuthCredential'
+                  description: The authentication credentials for the request.
+                credentials:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuthCredential'
+              allOf:
+                - type: object
+                  required:
+                    - request
+                  properties:
+                    request:
+                      allOf:
+                        - $ref: '#/components/schemas/ListResources'
+                      description: The main request payload.
+                    include_raw_data:
+                      type: boolean
+                      description: Whether to include raw data in the response.
+                    page:
+                      allOf:
+                        - $ref: '#/components/schemas/Page'
+                      description: Pagination information for the request.
+                    settings:
+                      type: object
+                      additionalProperties: {}
+                      description: |-
+                        Connector-specific settings for the request.
+
+                        These are settings that are shared across all capabilities.
+
+                        Usually contain additional required configuration options
+                        not specified by the capability schema.
+                  description: Generic request model.
+              description: Authenticated request.
+"""
