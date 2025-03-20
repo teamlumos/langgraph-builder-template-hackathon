@@ -15,4 +15,5 @@ class State:
     """
 
     input: str = ""
+    urls: str = ""
     changeme: str = "example"
