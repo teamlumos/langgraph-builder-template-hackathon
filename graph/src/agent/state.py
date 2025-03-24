@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -15,5 +15,10 @@ class State:
     """
 
     input: str = ""
-    url: str = ""
-    changeme: str = "example"
+    oas_discovery_report: str = ""
+    oas_discovery_urls: str = ""
+    oas_discovery_oas_url: str = ""
+    pre_research_report: str = ""
+    product_req_report: str = ""
+    dev_req_report: str = ""
+    oas_retrieval_report: str = ""
