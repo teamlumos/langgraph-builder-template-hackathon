@@ -1,5 +1,5 @@
 def initial_read_prompt(service_name: str):
-  prompt = f"""
+    prompt = f"""
 Here is the OAS for the connectors API. We will be implementing a connector with READ capabilities on an external API - {service_name}.
 
 <domain-intro>
@@ -15,7 +15,7 @@ Here is the OAS for the connectors API. We will be implementing a connector with
 </read-capabilities>
 """
 
-  return prompt
+    return prompt
 
 
 sdk_api_spec_intro = """openapi: 3.0.0

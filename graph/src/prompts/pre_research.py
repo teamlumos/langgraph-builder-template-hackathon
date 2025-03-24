@@ -1,11 +1,15 @@
-def pre_research_prompt():
-    return """<goal>
-- First, scan the entire API documentation
+def pre_research_prompt(html: str):
+    return f"""<goal>
+- First, scan the entire API documentation found in the following HTML
 - Identify both nested and general identity-related endpoints before deciding the most relevant path
 - Be aware of nested resources and do not include them unless they are tenant or organization related
 - Find API endpoints for relevant resources and be precise and explicit regarding URLs for API endpoints
 - Include explicit URLs for API endpoints in the output.
 </goal>
+
+<html>
+{html}
+</html>
 
 <relevant-identity-resources>
 - Users

@@ -1,11 +1,9 @@
-
-
 def compose_prompt(
-        pre_research: str, 
-        sdk_prompt: str, 
-        product_req_prompt: str | None = None,
-        dev_req_prompt: str | None = None
-    ) -> str:
+    pre_research: str,
+    sdk_prompt: str,
+    product_req_prompt: str | None = None,
+    dev_req_prompt: str | None = None,
+) -> str:
     """
     Compose a prompt for a research agent.
     """

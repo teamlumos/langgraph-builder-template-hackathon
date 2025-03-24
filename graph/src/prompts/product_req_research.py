@@ -37,4 +37,3 @@ graph TD
 </output-format>
 """
     return PROMPT
-
