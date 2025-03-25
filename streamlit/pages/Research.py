@@ -13,7 +13,7 @@ st.query_params["thread_id"] = st.session_state.thread_id if "thread_id" in st.s
 st.session_state.thread_id = st.query_params.get("thread_id", None) 
 
 if st.query_params.get("thread_id", None) is None or st.query_params.get("thread_id", None) == "None":
-    st.switch_page("app.py")
+    st.switch_page("Home.py")
     st.stop()
 
 page_config()
