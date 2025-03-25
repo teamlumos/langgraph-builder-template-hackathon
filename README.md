@@ -16,7 +16,7 @@ The agent follows a structured workflow to gather comprehensive information abou
 │   │   └── prompts/        # Prompts for different research stages
 │   └── scripts/            # Scripts for running and managing the agent
 ├── streamlit/              # Streamlit web interface
-│   ├── app.py              # Main application entry point
+│   ├── Home.py             # Main application entry point
 │   ├── pages/              # Additional pages for the web interface
 │   └── utils.py            # Utility functions for the web interface
 ├── scripts/                # Project management scripts

@@ -1,1 +1,1 @@
-uv run python -m streamlit run streamlit/app.py
+uv run python -m streamlit run streamlit/Home.py
