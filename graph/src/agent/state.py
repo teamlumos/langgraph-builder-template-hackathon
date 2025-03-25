@@ -14,6 +14,7 @@ class State:
     for more information.
     """
 
+    thread_id: str = ""
     input: str = ""
     oas_discovery_report: str = ""
     oas_discovery_urls: str = ""

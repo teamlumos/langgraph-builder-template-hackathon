@@ -39,6 +39,7 @@ class DevReqResearchAgent(ResearchAgent):
             report_type="custom_report",
             agent=self.agent_model,
             source_urls=self.source_urls,
+            verbose=False,
         )
 
         research_result = await researcher.conduct_research()

@@ -26,6 +26,7 @@ class OASDiscoveryAgent(ResearchAgent):
         researcher = GPTResearcher(
             query=self.prompt,
             report_type="custom_report",
+            verbose=False,
         )
 
         research_result = await researcher.conduct_research()

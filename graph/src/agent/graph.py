@@ -6,7 +6,7 @@ This agent returns a predefined response without using an actual LLM.
 import asyncio
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 
 import requests
 from langchain_core.prompts import ChatPromptTemplate
@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.types import Command, interrupt
-
+from langgraph.types import StreamWriter
 from graph.src.agent.agent import (
     DevReqResearchAgent,
     OASDiscoveryAgent,
@@ -23,32 +23,54 @@ from graph.src.agent.agent import (
     PreResearchAgent,
     ProductReqResearchAgent,
 )
-
+from langchain_core.output_parsers import StrOutputParser
 from .configuration import Configuration
 from .state import State
 
 
-def start(state: State, config: RunnableConfig) -> Dict[str, Any]:
+def summarize(text: str) -> str:
+    """Summarize the text."""
+    prompt = ChatPromptTemplate.from_template(
+        """
+        Summarize the following text in 30 words or less:
+        <text>
+        {text}
+        </text>
+
+        Return the summary exclusively, without any other text.
+        """
+    )
+
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    chain = prompt | llm | StrOutputParser()
+    return chain.invoke({"text": text})
+
+def start(state: State, config: RunnableConfig, writer: StreamWriter) -> Dict[str, Any]:
     """Start the agent."""
+    writer("Starting the agent.")
     config_params = Configuration.from_runnable_config(config)
-    print("Starting the agent...")
-    print(state)
-    print(config_params)
+    
+    # Create directory if it doesn't exist
+    Path(f"my-docs/{config_params.thread_id}").mkdir(parents=True, exist_ok=True)
+    writer("Creating directory for the agent.")
+    return {"input": state.input, "thread_id": config_params.thread_id}
 
-    return {"input": state.input}
 
-
-def oas_discovery(state: State) -> Dict[str, Any]:
+def oas_discovery(state: State, writer: StreamWriter) -> Dict[str, Any]:
     """OAS discovery."""
+    writer("OAS discovery...")
     service_name = state.input
     oas_discovery_agent = OASDiscoveryAgent(None, service_name)
 
     async def oas_discovery() -> str:
         try:
             oas_discovery_report, oas_url_list = await oas_discovery_agent.research()
-            Path("my-docs/oas_discovery_report.md").write_text(oas_discovery_report)
-            Path("my-docs/oas_url_list.md").write_text(oas_url_list)
+            Path(f"my-docs/{state.thread_id}/1_oas_discovery_report.md").write_text(oas_discovery_report)
+            Path(f"my-docs/{state.thread_id}/2_oas_url_list.md").write_text(oas_url_list)
+
+            writer(summarize(oas_discovery_report))
         except Exception as e:
+            writer(f"Error in OAS discovery: {e}")
             print(f"Error in OAS discovery: {e}")
             raise e
 
@@ -82,9 +104,10 @@ def oas_discovery_url(state: State) -> Dict[str, Any]:
     return {"oas_discovery_oas_url": oas_url.content}
 
 
-def pre_research(state: State) -> Dict[str, Any]:
+def pre_research(state: State, writer: StreamWriter) -> Dict[str, Any]:
     """Pre-research."""
     service_name = state.input
+    writer("Pre-research...")
 
     def fetch_html(url: str) -> str:
         """Fetches HTML content from a given URL.
@@ -101,7 +124,7 @@ def pre_research(state: State) -> Dict[str, Any]:
 
             html = ""
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=False)
+                browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
                 page.goto(url)
                 page.wait_for_load_state('networkidle')
@@ -126,9 +149,10 @@ def pre_research(state: State) -> Dict[str, Any]:
     async def pre_research() -> str:
         try:
             _, pre_research_report = await pre_research_agent.research()
-            print(pre_research_report)
-            Path("my-docs/pre_research_report.md").write_text(pre_research_report)
+            writer(summarize(pre_research_report))
+            Path(f"my-docs/{state.thread_id}/3_pre_research_report.md").write_text(pre_research_report)
         except Exception as e:
+            writer(f"Error in pre-research: {e}")
             print(f"Error in pre-research: {e}")
             raise e
 
@@ -139,10 +163,11 @@ def pre_research(state: State) -> Dict[str, Any]:
     return {"pre_research_report": pre_research_report}
 
 
-def product_req_research(state: State) -> Dict[str, Any]:
+def product_req_research(state: State, writer: StreamWriter) -> Dict[str, Any]:
     """Product requirements research."""
     agent = "anthropic:claude-3-7-sonnet-latest"
     service_name = state.input
+    writer("Product requirements research...")
 
     # 2. Do a product requirements research
     product_req_research_agent = ProductReqResearchAgent(
@@ -152,9 +177,10 @@ def product_req_research(state: State) -> Dict[str, Any]:
     async def product_req_research() -> str:
         try:
             _, product_req_report = await product_req_research_agent.research()
-            print(product_req_report)
-            Path("my-docs/product_req_report.md").write_text(product_req_report)
+            writer(summarize(product_req_report))
+            Path(f"my-docs/{state.thread_id}/4_product_req_report.md").write_text(product_req_report)
         except Exception as e:
+            writer(f"Error in product requirements research: {e}")
             print(f"Error in product requirements research: {e}")
             raise e
 
@@ -165,10 +191,11 @@ def product_req_research(state: State) -> Dict[str, Any]:
     return {"product_req_report": product_req_report}
 
 
-def dev_req_research(state: State) -> Dict[str, Any]:
+def dev_req_research(state: State, writer: StreamWriter) -> Dict[str, Any]:
     """Developer requirements research."""
     agent = "anthropic:claude-3-7-sonnet-latest"
     service_name = state.input
+    writer("Developer requirements research...")
 
     # 3. Do a developer requirements research
     dev_req_research_agent = DevReqResearchAgent(
@@ -178,9 +205,10 @@ def dev_req_research(state: State) -> Dict[str, Any]:
     async def dev_req_research() -> str:
         try:
             _, dev_req_report = await dev_req_research_agent.research()
-            print(dev_req_report)
-            Path("my-docs/dev_req_report.md").write_text(dev_req_report)
+            writer(summarize(dev_req_report))
+            Path(f"my-docs/{state.thread_id}/5_dev_req_report.md").write_text(dev_req_report)
         except Exception as e:
+            writer(f"Error in developer requirements research: {e}")
             print(f"Error in developer requirements research: {e}")
             raise e
 
@@ -192,11 +220,11 @@ def dev_req_research(state: State) -> Dict[str, Any]:
 
 
 # TODO: This is a placeholder for the OAS retrieval agent
-def oas_retrieval(state: State) -> Dict[str, Any]:
+def oas_retrieval(state: State, writer: StreamWriter) -> Dict[str, Any]:
     """OAS retrieval."""
     agent = "anthropic:claude-3-7-sonnet-latest"
     service_name = state.input
-
+    writer("OAS retrieval...")
     # TODO: 4. retrieve OAS/Postman collection (currently manually done)
     oas_retrieval_agent = OASRetrievalAgent(
         agent, service_name, [state.oas_discovery_oas_url]
@@ -205,8 +233,8 @@ def oas_retrieval(state: State) -> Dict[str, Any]:
     async def oas_retrieval() -> str:
         try:
             _, oas_retrieval_report = await oas_retrieval_agent.research()
-            print(oas_retrieval_report)
-            Path("my-docs/oas_retrieval_report.md").write_text(oas_retrieval_report)
+            writer(summarize(oas_retrieval_report))
+            Path(f"my-docs/{state.thread_id}/6_oas_retrieval_report.md").write_text(oas_retrieval_report)
         except Exception as e:
             print(f"Error in OAS retrieval: {e}")
             raise e
