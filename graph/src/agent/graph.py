@@ -124,7 +124,7 @@ def pre_research(state: State, writer: StreamWriter) -> Dict[str, Any]:
 
             html = ""
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch()
                 page = browser.new_page()
                 page.goto(url)
                 page.wait_for_load_state('networkidle')
