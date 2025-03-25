@@ -3,3 +3,5 @@ __pycache__
 .venv
 .DS_Store
 .langgraph_api
+my-docs
+output.zip
